@@ -1,8 +1,6 @@
 /// enableRightClick.js
 
-addEventListener("load", (event) => {
   enableContextMenu();
-});
 
 function enableContextMenu(aggressive = false) {
   void(document.ondragstart=null);
