@@ -1,4 +1,5 @@
 /// ExampleScript.js
   addEventListener("load", (event) => {
-    alert("DOM fully loaded and parsed");
+    let e = document.querySelector("div.image-container > a");
+    alert(e.href);
   });
