@@ -1,9 +1,9 @@
 /// mytest.js
 
 // Restore Right Click
-  addEventListener("DOMContentLoaded", (event) => {
-    alert("DOM fully loaded and parsed");
-  });
+addEventListener("load", (event) => {
+  enableContextMenu();
+})
 
 function enableContextMenu(aggressive = false) {
   void(document.ondragstart=null);
