@@ -1,4 +1,4 @@
-/// enableRightClick.js
+/// restoreRightClick.js
 
 // Restore Right Click
 enableContextMenu();
