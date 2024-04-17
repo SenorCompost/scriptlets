@@ -1,7 +1,7 @@
 /// mytest.js
 
 // Restore Right Click
-  document.addEventListener("DOMContentLoaded", (event) => {
+  addEventListener("DOMContentLoaded", (event) => {
     alert("DOM fully loaded and parsed");
   });
 
