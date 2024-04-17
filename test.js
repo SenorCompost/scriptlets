@@ -1,2 +1,4 @@
 /// ExampleScript.js
-alert("Hello I'm running via scriptlet injection.");
+  addEventListener("DOMContentLoaded", (event) => {
+    alert("DOM fully loaded and parsed");
+  });
