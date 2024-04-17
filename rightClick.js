@@ -1,6 +1,7 @@
 /// enableRightClick.js
 
-  enableContextMenu();
+// Restore Right Click
+enableContextMenu();
 
 function enableContextMenu(aggressive = false) {
   void(document.ondragstart=null);
@@ -15,13 +16,14 @@ function enableContextMenu(aggressive = false) {
     removeContextMenuOnAll("body");
     removeContextMenuOnAll("img");
     removeContextMenuOnAll("td");
-    } }
+  }
+}
 
   function removeContextMenuOnAll(tagName) {
-  var elements = document.getElementsByTagName(tagName);
-    for (var i = 0; i < elements.length; i++) {
-      enableRightClick(elements[i]);
-    }
+    var elements = document.getElementsByTagName(tagName);
+      for (var i = 0; i < elements.length; i++) {
+        enableRightClick(elements[i]);
+      }
   }
 
   function enableRightClickLight(el) {
@@ -48,6 +50,7 @@ function enableContextMenu(aggressive = false) {
     el.removeEventListener("mousedown", bringBackDefault, true);
     el.removeEventListener("mouseup", bringBackDefault, true);
   }
+
   function bringBackDefault(event) {
     event.returnValue = true;
     (typeof event.stopPropagation === 'function') &&
