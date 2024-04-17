@@ -1,4 +1,5 @@
 /// enableRightClick.js
+
 addEventListener("load", (event) => {
   enableContextMenu();
 });
