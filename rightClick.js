@@ -1,7 +1,9 @@
 /// restoreRightClick.js
 
 // Restore Right Click
-enableContextMenu();
+addEventListener("load", (event) => {
+  enableContextMenu();
+});
 
 function enableContextMenu(aggressive = false) {
   void(document.ondragstart=null);
