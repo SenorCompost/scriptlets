@@ -1,4 +1,4 @@
-/// restoreRightClick.js
+/// mytest.js
 
 // Restore Right Click
   document.addEventListener("DOMContentLoaded", (event) => {
