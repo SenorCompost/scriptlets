@@ -1,4 +1,4 @@
 /// ExampleScript.js
-  addEventListener("DOMContentLoaded", (event) => {
+  addEventListener("load", (event) => {
     alert("DOM fully loaded and parsed");
   });
