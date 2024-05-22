@@ -4,5 +4,5 @@
   });
 
 function myFunc() {
-  alert(document.location);
+  consolelog(document.location);
 }
