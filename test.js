@@ -1,8 +1,5 @@
-/// ExampleScript.js
-  addEventListener("load", (event) => {
-    myFunc();
-  });
+/// docLocation.js
+  console.log(document.location);
 
-function myFunc() {
-  consolelog(document.location);
-}
+/// docTitle.js
+  console.log(document.title);
