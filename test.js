@@ -4,6 +4,5 @@
   });
 
 function myFunc() {
-  let e = document.querySelector("div.image-container > a");
-  alert(e.href);
+  alert(document.location);
 }
