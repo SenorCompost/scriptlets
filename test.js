@@ -1,5 +1,6 @@
 /// docLocation.js
-  console.log(document.location);
+scriptTest();
 
-/// docTitle.js
+function scriptTest() {
   console.log(document.title);
+}
