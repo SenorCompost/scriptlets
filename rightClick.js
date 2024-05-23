@@ -1,4 +1,4 @@
-/// MyTest.js
+/// enableRightClick.js
 
 enableContextMenu();
 
