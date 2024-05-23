@@ -5,8 +5,8 @@
 /// dependency run-at.fn
 // example.com##+js(moo)
 
-function Jess() {
+(function() {
   addEventListener("load", (event) => {
     console.log('My Test!');
   }); 
-}
+})();
