@@ -6,5 +6,7 @@
 // example.com##+js(moo)
 
 function Jess() {
-  console.log(document.title);
+  addEventListener("load", (event) => {
+    console.log('My Test!');
+  }); 
 }
