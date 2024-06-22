@@ -1,11 +1,12 @@
-async function removeProtectedGarlleries(){
+function removeProtectedGarlleries(){
 	MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
 	var observer = new MutationObserver(function(mutations, observer) {
 		if(mutations[0].target.className == 'media-lazy-load' || mutations[0].target.className == 'pictures-wrapper') {
-			for(var ele of document.querySelectorAll("img[src*='gallery-locked']")) {
-				ele.parentElement.parentElement.parentElement.remove();
-				await sleep(500);
+			for(let ele of document.querySelectorAll("div.media-lazy-load")) {
+				if(ele.innerHTML.indexOf('media/gallery-locked') > 0) {
+					ele.style.display = "none";
+				}
 			}
 		}
 	});
@@ -15,8 +16,4 @@ async function removeProtectedGarlleries(){
 	  subtree: true,
 	  attributes: true,
 	});
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
