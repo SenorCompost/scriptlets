@@ -11,3 +11,9 @@ function onElementAvailable(selector, callback) {
 		attributes: true,
 	});
 }
+
+onElementAvailable('div#indexWrapper', () => {
+	for(let a of document.querySelectorAll("ul.list-boards >li >a")) {
+		a.setAttribute("href", a.href + "catalog.html"); a.setAttribute("target", "_blank");
+	}
+});
