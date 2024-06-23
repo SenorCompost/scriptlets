@@ -4,7 +4,7 @@ function onElementAvailable(selector, callback) {
 		observer.disconnect();
 		callback();
     }
-});
+  });
 	observer.observe(document, {
 		childList: true,
 		subtree: true,
@@ -12,8 +12,10 @@ function onElementAvailable(selector, callback) {
 	});
 }
 
-onElementAvailable('div#indexWrapper', () => {
-	for(let a of document.querySelectorAll("ul.list-boards >li >a")) {
-		a.setAttribute("href", a.href + "catalog.html"); a.setAttribute("target", "_blank");
-	}
-});
+function elementReady(){
+	onElementAvailable('div#indexWrapper', () => {
+		for(let a of document.querySelectorAll("ul.list-boards >li >a")) {
+			a.setAttribute("href", a.href + "catalog.html"); a.setAttribute("target", "_blank");
+		}
+	});
+}
