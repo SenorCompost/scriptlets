@@ -5,10 +5,9 @@ function onElementAvailable(selector, callback) {
 		callback();
     }
 });
-
-  observer.observe(document, {
-    childList: true,
-    subtree: true,
-	attributes: true,
-  });
+	observer.observe(document, {
+		childList: true,
+		subtree: true,
+		attributes: true,
+	});
 }
