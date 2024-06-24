@@ -7,7 +7,7 @@ function loadJS(jsURL){
 	
 	document.body.appendChild(script);
 
-	script.addEventListener("onload", (ev) => {
+	script.addEventListener("load", (ev) => {
 		console.log("File loading file", ev);
 	});
 
