@@ -1,21 +1,19 @@
-function onElementAvailable(selector, callback) {
-  var observer = new MutationObserver(mutations => {
-    if (document.querySelector(selector)) {
-		observer.disconnect();
-		callback();
-    }
-  });
-	observer.observe(document, {
-		childList: true,
-		subtree: true,
-		attributes: true,
-	});
-}
+function waitForElm(selector,i) {
+    return new Promise(resolve => {
+        if (document.querySelectorAll(selector)[i]) {
+            return resolve(document.querySelectorAll(selector)[i]);
+        }
 
-function elementReady(){
-	onElementAvailable('div#indexWrapper', () => {
-		for(let a of document.querySelectorAll("ul.list-boards >li >a")) {
-			a.setAttribute("href", a.href + "catalog.html"); a.setAttribute("target", "_blank");
-		}
-	});
+        const observer = new MutationObserver(mutations => {
+            if (document.querySelectorAll(selector)[i]) {
+                observer.disconnect();
+                resolve(document.querySelectorAll(selector)[i]);
+            }
+        });
+
+        observer.observe(document, {
+            childList: true,
+            subtree: true
+        });
+    });
 }
