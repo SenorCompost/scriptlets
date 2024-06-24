@@ -7,10 +7,6 @@ function loadJS(jsURL){
 	
 	document.body.appendChild(script);
 
-	script.addEventListener("load", () => {
-		console.log('Violentmonkey Loaded Script!');
-	});
-
 	script.addEventListener("error", (ev) => {
 		console.log("Error on loading file", ev);
 	});
