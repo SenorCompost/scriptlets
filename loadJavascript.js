@@ -7,10 +7,6 @@ function loadJS(jsURL){
 
 	  document.body.appendChild(script);
 
-	  script.addEventListener("load", () => {
-		console.log('Script Loaded!');
-	  });
-	  
 	  script.addEventListener("error", (ev) => {
 		console.log("Error on loading file", ev);
 	  });
