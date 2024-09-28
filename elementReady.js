@@ -20,3 +20,5 @@ function elementReady(selector) {
       });
   });
 }
+
+//elementReady('div.pictures-wrapper').then((e)=> { console.log(e) });
