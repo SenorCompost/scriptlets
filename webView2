@@ -1,0 +1,134 @@
+#----------------------------------------------
+#region Import the Assemblies
+#----------------------------------------------
+$UserData = "C:\Users\myPC\Desktop\BrowserData"
+Add-Type -Path "C:\Users\myPC\Desktop\webView2 Files\Microsoft.Web.WebView2.WinForms.dll"
+Add-Type -Path "C:\Users\myPC\Desktop\webView2 Files\Microsoft.Web.WebView2.Core.dll"
+#endregion  Import the Assemblies
+#----------------------------------------------
+#region JavaScript
+#----------------------------------------------
+$jsPath = 'C:\Users\myPC\Desktop\webView2 Files\myFunctions.js'
+$myJS = Get-Content -path $jsPath
+$jsScripts = $myJS
+#endregion JavaScript
+#----------------------------------------------
+#region Generated Form Objects
+#----------------------------------------------
+# Declare objects
+[System.Windows.Forms.Application]::EnableVisualStyles()
+$form = New-Object -TypeName System.Windows.Forms.Form
+$buttonRefresh = New-Object -TypeName System.Windows.Forms.Button
+$buttonGo = New-Object -TypeName System.Windows.Forms.Button
+$addressBar = New-Object -TypeName System.Windows.Forms.TextBox
+[Microsoft.Web.WebView2.WinForms.WebView2] $webview = New-Object 'Microsoft.Web.WebView2.WinForms.WebView2'
+$webview.CreationProperties = New-Object 'Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties'
+$webview.CreationProperties.UserDataFolder = $env:userprofile + '\Desktop\webView2Data'
+$InitialFormWindowState = New-Object 'System.Windows.Forms.FormWindowState'
+#endregion Generated Form Objects
+
+$form_Load={
+    $webview.Source = $addressBar.Text
+    $webview.Visible = $true
+}
+
+$buttonGo_Click={
+    #TODO: Place custom scrsipt here
+    #$webview.Source = $addressBar.Text
+}
+
+$webview_SourceChanged={
+   #$form.Text = $webview.Source;
+}
+
+#$stuff = "window.chrome.webview.postMessage(document.documentElement.querySelectorAll('a')[0].href);"
+#$stuff = "window.chrome.webview.postMessage(" + $myJS +");"
+$stuff = $myJS
+
+$WebView.add_NavigationCompleted({
+  $WebView.ExecuteScriptAsync($stuff);
+  "window.chrome.webview.postMessage(" + $myJS +");"
+})
+
+$WebView.add_WebMessageReceived({
+ #   param($WebView, $message)
+ #   Write-Host $message.TryGetWebMessageAsString()
+   # $addressBar.Text = $message.TryGetWebMessageAsString()
+})
+
+#----------------------------------------------
+#region Generated Events
+#----------------------------------------------
+$form_StateCorrection_Load={
+    $form.WindowState = 'MAXIMIZE'
+}
+#endregion Generated Events
+
+#----------------------------------------------
+#region Generated Form Code
+#----------------------------------------------
+$form.SuspendLayout()
+#
+# form1
+#
+$form.Controls.Add($buttonRefresh)
+$form.Controls.Add($buttonGo)
+$form.Controls.Add($addressBar)
+$form.Controls.Add($webview)
+$form.AutoScaleDimensions = New-Object System.Drawing.SizeF(6, 13)
+$form.AutoScaleMode = 'Font'
+$form.ClientSize = New-Object System.Drawing.Size(619, 413)
+$form.Name = 'form1'
+$form.Text = 'Form'
+$form.add_Load($form_Load)
+#
+# buttonRefresh
+#
+$buttonRefresh.Location = New-Object System.Drawing.Point(13, 13)
+$buttonRefresh.Name = 'buttonRefresh'
+$buttonRefresh.Size = New-Object System.Drawing.Size(75, 23)
+$buttonRefresh.TabIndex = 3
+$buttonRefresh.Text = 'Refresh'
+$buttonRefresh.UseVisualStyleBackColor = $True
+#
+# buttonGo
+#
+$buttonGo.Location = New-Object System.Drawing.Point(538, 13)
+$buttonGo.Name = 'buttonGo'
+$buttonGo.Size = New-Object System.Drawing.Size(75, 23)
+$buttonGo.TabIndex = 2
+$buttonGo.Text = 'Go'
+$buttonGo.UseVisualStyleBackColor = $True
+$buttonGo.add_Click($buttonGo_Click)
+#
+# addressBar
+#
+$addressBar.Location = New-Object System.Drawing.Point(96, 13)
+$addressBar.Name = 'addressBar'
+$addressBar.Size = New-Object System.Drawing.Size(435, 23)
+$addressBar.TabIndex = 1
+$addressBar.Text = 'https://www.viewbug.com/member/ferciaphotography'
+#
+# webview
+#
+$webview.Location = New-Object System.Drawing.Point(0, 49)
+$webview.Name = 'webview'
+$webview.Size = New-Object System.Drawing.Size(2560, 1300)
+$webview.TabIndex = 0
+$webview.ZoomFactor = 1
+
+$form.ResumeLayout()
+#endregion Generated Form Code
+
+#Save the initial state of the form
+$InitialFormWindowState = $form.WindowState
+
+#Init the OnLoad event to correct the initial state of the form
+$form.add_Load($Form_StateCorrection_Load)
+
+#Clean up the control events
+$form.add_FormClosed($Form_Cleanup_FormClosed)
+
+# Show the form
+$form.Controls.Add($webview)
+$form.ShowDialog()
