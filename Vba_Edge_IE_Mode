@@ -1,0 +1,270 @@
+Global lngProcessID_Close As Long
+Public strHwndIES As String, lngHwndIndex As Long
+Public Declare PtrSafe Function EnumWindows Lib "user32.dll" (ByVal lpEnumFunc As LongPtr, ByVal lParam As Long) As Long
+Public Declare PtrSafe Function EnumChildWindows Lib "user32.dll" (ByVal hWndParent As Long, ByVal lpEnumFunc As LongPtr, ByVal lParam As Long) As Long
+Public Declare PtrSafe Function GetClassName Lib "user32.dll" Alias "GetClassNameA" (ByVal hWnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
+Public Const SMTO_ABORTIFHUNG = &H2
+Public Const GUID_IHTMLDocument2 = "{332C4425-26CB-11D0-B483-00C04FD90119}"
+Public Declare PtrSafe Function RegisterWindowMessage Lib "user32.dll" Alias "RegisterWindowMessageA" (ByVal lpString As String) As Long
+Public Declare PtrSafe Function SendMessageTimeout Lib "user32.dll" Alias "SendMessageTimeoutA" ( _
+    ByVal hWnd As Long, _
+    ByVal msg As Long, _
+    ByVal wParam As Long, _
+    lParam As Any, _
+    ByVal fuFlags As Long, _
+    ByVal uTimeout As Long, _
+    lpdwResult As Long) As Long
+
+Public Declare PtrSafe Function IIDFromString Lib "ole32.dll" (lpsz As Any, lpiid As Any) As Long
+Public Declare PtrSafe Function ObjectFromLresult Lib "oleacc.dll" (ByVal lResult As Long, riid As Any, ByVal wParam As Long, ppvObject As Any) As Long
+Public Declare PtrSafe Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hWnd As Long, lpdwProcessId As Long) As Long
+Public Function findEdgeDOM(URL As String) As Object
+    Dim hwndIES As Long
+    Do
+
+        hwndIES = enumHwndIES
+
+        If hwndIES Then
+
+            Set findEdgeDOM = getHTMLDocumentFromIES(hwndIES)
+
+            If Not findEdgeDOM Is Nothing Then
+
+                If InStr(findEdgeDOM.Title, Title) * InStr(findEdgeDOM.URL, URL) Then
+
+                    Do
+
+                        hwndIES = enumHwndIES
+
+                    Loop While hwndIES
+
+                    Exit Function
+
+                Else
+
+                    Set findEdgeDOM = Nothing
+
+                End If
+
+            End If
+
+        End If
+
+    Loop While hwndIES
+
+End Function
+
+Public Function enumHwndIES() As Long
+
+    'Get all hwnds of IES
+
+    If Len(strHwndIES) = 0 Then
+
+        EnumWindows AddressOf EnumWindowsProc, 0
+
+        lngHwndIndex = 0
+
+    End If
+
+    'Exit function when overflow
+
+    If lngHwndIndex + 1 > (Len(strHwndIES) - Len(Replace(strHwndIES, ",", ""))) Then
+
+        enumHwndIES = 0
+
+        strHwndIES = ""
+
+        Exit Function
+
+    End If
+
+    'Return IES hwnd one by one
+
+    enumHwndIES = CLng(Split(Left(strHwndIES, Len(strHwndIES) - 1), ",")(lngHwndIndex))
+
+    lngHwndIndex = lngHwndIndex + 1
+
+End Function
+
+Public Function EnumWindowsProc(ByVal hWnd As Long, ByVal lParam As Long) As Boolean
+
+    Dim lngProcessID As Long
+
+    GetWindowThreadProcessId hWnd, lngProcessID
+
+    EnumChildWindows hWnd, AddressOf EnumChildProc, lngProcessID
+
+    EnumWindowsProc = True
+
+End Function
+
+Public Function EnumChildProc(ByVal hWnd As Long, ByVal lParam As Long) As Boolean
+
+    Dim strTargetClass As String, strClassName As String
+
+    strTargetClass = "Internet Explorer_Server"
+
+    strClassName = getClass(hWnd)
+
+    If strClassName = strTargetClass Then
+
+        If GetObject("winmgmts:").ExecQuery("Select Name from Win32_Process WHERE ProcessId='" & lParam & "' AND Name='msedge.exe'").Count Then
+
+            strHwndIES = strHwndIES & hWnd & ","
+
+            lngProcessID_Close = lParam
+
+            EnumChildProc = False
+
+            Exit Function
+
+        End If
+
+    End If
+
+    EnumChildProc = True
+
+End Function
+
+Private Function getClass(hWnd As Long) As String
+
+    Dim strClassName As String
+
+    Dim lngRetLen As Long
+
+
+    strClassName = Space(255)
+
+    lngRetLen = GetClassName(hWnd, strClassName, Len(strClassName))
+
+    getClass = Left(strClassName, lngRetLen)
+
+End Function
+
+Public Function getHTMLDocumentFromIES(ByVal hWnd As Long) As Object
+
+    Dim iid(0 To 3) As Long
+
+    Dim lMsg As Long, lRes As Long
+
+    lMsg = RegisterWindowMessage("WM_HTML_GETOBJECT")
+
+    SendMessageTimeout hWnd, lMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, lRes
+
+    If lRes Then
+
+        IIDFromString StrPtr(GUID_IHTMLDocument2), iid(0)
+
+        ObjectFromLresult lRes, iid(0), 0, getHTMLDocumentFromIES
+
+    End If
+
+End Function
+
+Public Sub closeEdge(Title As String, URL As String)
+
+    'Close a Edge browser (the last one in EnumWindows order) with criteria-hitting webpage
+
+    lngProcessID_Close = 0
+
+    Dim findEdgeDOM As Object
+
+    Dim hwndIES As Long
+
+    Do
+
+        hwndIES = enumHwndIES
+
+        If hwndIES Then
+
+            Set findEdgeDOM = getHTMLDocumentFromIES(hwndIES)
+
+            If InStr(findEdgeDOM.Title, Title) * InStr(findEdgeDOM.URL, URL) Then
+
+                Shell "TaskKill /pid " & lngProcessID_Close
+
+                Do
+
+                    hwndIES = enumHwndIES
+
+                Loop While hwndIES
+
+                Exit Sub
+
+            End If
+
+        End If
+
+    Loop While hwndIES
+
+End Sub
+Sub findEdgeDOM_DemoProc()
+    Dim doc As New HTMLDocument
+    Set doc = findEdgeDOM("reddit.com")
+    
+    doc.parentWindow.execScript ele & ".dispatchEvent(new Event('event', {bubbles:true}));"
+    
+
+End Sub
+Public Function jsWindowOpen(ByVal sUrl As String) As String
+    jsWindowOpen = Replace("window.open('sReplace','_self');", "sReplace", sUrl)
+End Function
+Public Function jsDispatchEvent(ByVal sElem As String, ByVal ev As String) As String
+    jsDispatchEvent = sElem & Replace(".dispatchEvent(new Event('event', {bubbles:true}));", "event", ev)
+End Function
+Sub goEdge()
+
+    'Go through every Edge webpage (opened in IE mode) and print out hwndIES, webpage Title & webpage URL
+
+    Dim hwndIES As Long
+
+    'Dim docHTML As MSHTML.HTMLDocument     '--- Early Binding
+
+    Dim docHTML As Object                   '--- Late Binding
+
+    Do
+
+        hwndIES = enumHwndIES
+
+        If hwndIES Then
+
+            Set docHTML = getHTMLDocumentFromIES(hwndIES)
+
+            Debug.Print hwndIES, docHTML.Title, docHTML.URL
+
+        Else
+
+            Debug.Print "Procedure End"
+
+        End If
+
+    Loop While hwndIES
+
+End Sub
+
+Sub openEdgeByURL_DemoProc()
+
+    'Open Edge browser to specific URL
+
+    openEdgeByURL "https://google.com"
+
+End Sub
+
+Public Sub openEdgeByURL(URL As String)
+
+    'Please change the path to your msedge.exe location in your PC
+
+    Shell "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe -url " & URL, vbNormalFocus
+
+End Sub
+
+Sub closeEdge_DemoProc()
+
+    'Close Edge browser
+
+    closeEdge "Enter Part of Webpage Title Here", "Enter Part of Webpage URL Here"
+
+End Sub
+Sub EdgeTest()
+Debug.Print Chr(34)
+End Sub
