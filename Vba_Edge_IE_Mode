@@ -1,270 +1,165 @@
-Global lngProcessID_Close As Long
-Public strHwndIES As String, lngHwndIndex As Long
-Public Declare PtrSafe Function EnumWindows Lib "user32.dll" (ByVal lpEnumFunc As LongPtr, ByVal lParam As Long) As Long
-Public Declare PtrSafe Function EnumChildWindows Lib "user32.dll" (ByVal hWndParent As Long, ByVal lpEnumFunc As LongPtr, ByVal lParam As Long) As Long
-Public Declare PtrSafe Function GetClassName Lib "user32.dll" Alias "GetClassNameA" (ByVal hWnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
-Public Const SMTO_ABORTIFHUNG = &H2
-Public Const GUID_IHTMLDocument2 = "{332C4425-26CB-11D0-B483-00C04FD90119}"
-Public Declare PtrSafe Function RegisterWindowMessage Lib "user32.dll" Alias "RegisterWindowMessageA" (ByVal lpString As String) As Long
-Public Declare PtrSafe Function SendMessageTimeout Lib "user32.dll" Alias "SendMessageTimeoutA" ( _
-    ByVal hWnd As Long, _
-    ByVal msg As Long, _
-    ByVal wParam As Long, _
-    lParam As Any, _
-    ByVal fuFlags As Long, _
-    ByVal uTimeout As Long, _
-    lpdwResult As Long) As Long
 
-Public Declare PtrSafe Function IIDFromString Lib "ole32.dll" (lpsz As Any, lpiid As Any) As Long
-Public Declare PtrSafe Function ObjectFromLresult Lib "oleacc.dll" (ByVal lResult As Long, riid As Any, ByVal wParam As Long, ppvObject As Any) As Long
-Public Declare PtrSafe Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hWnd As Long, lpdwProcessId As Long) As Long
-Public Function findEdgeDOM(URL As String) As Object
-    Dim hwndIES As Long
-    Do
+Public Declare PtrSafe Sub Sleep Lib "kernel32.dll" (ByVal time As Long)
+Public Declare PtrSafe Function SetForegroundWindow Lib "user32.dll" (ByVal hwnd As LongPtr) As Integer
+Public Declare PtrSafe Function EnumWindows Lib "user32" (ByVal lpEnumFunc As LongPtr, ByVal lParam As LongPtr) As LongPtr
+Public Declare PtrSafe Function EnumChildWindows Lib "user32" (ByVal hWndParent As LongPtr, ByVal lpEnumFunc As LongPtr, ByVal lParam As LongPtr) As LongPtr
+Public Declare PtrSafe Function GetClassName Lib "user32.dll" Alias "GetClassNameA" (ByVal hwnd As LongPtr, ByVal Buffer As String, ByVal bufferLength As Integer) As Long
+Public Declare PtrSafe Function GetWindowText Lib "user32.dll" Alias "GetWindowTextA" (ByVal hwnd As LongPtr, ByVal Buffer As String, ByVal bufferLength As Integer) As Long
+Public Declare PtrSafe Function FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+Public Declare PtrSafe Function sendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As LongPtr, ByVal wMsg As Long, ByVal wParam As LongPtr, lParam As Any) As Long
+Public Declare PtrSafe Function FindWindowEx Lib "user32" Alias "FindWindowExA" (ByVal hWnd1 As LongPtr, ByVal hWnd2 As LongPtr, ByVal lpsz1 As String, ByVal lpsz2 As String) As Long
+Public Declare PtrSafe Function RegisterWindowMessageW Lib "user32" (ByVal lpString As LongPtr) As Long
+Public Declare PtrSafe Function SendMessageTimeoutW Lib "user32" (ByVal hwnd As LongPtr, ByVal msg As Long, ByVal wParam As LongPtr, ByRef lParam As LongPtr, ByVal fuFlags As Long, ByVal uTimeout As Long, ByRef lpdwResult As Long) As LongPtr
+Public Declare PtrSafe Function ObjectFromLresult Lib "oleacc" (ByVal lResult As Long, ByRef riid As Currency, ByVal wParam As LongPtr, ppvObject As Any) As Long
+Public resultHwnd As LongPtr
+Public ieHwnd As LongPtr        'Added for UIA that requires IE Window Handle
+Public targetTitle As String   'Global var for functions to check the user-defined title of the target window
+Public resultTitle As String   'Global var for functions to check the current window title during enumerations
+Public searchTimeStart, searchTimeOut
+Function Backup_GetEdgeIeDOM(ByVal WinTitle As String) As Object
+'----------------------------------------------------------------------------------
+'Note : This function uses GetHTMLDocument function to obtain the HTMLDoc Object
+'       based on the window handle obtained from SearchForIEWindow function using
+'       the user-provided windows title.
+'----------------------------------------------------------------------------------
+    
+   'Enable for IntelliSense
+   'Requires MS HTML Object Library Reference
+    'Dim TargetWebDoc As MSHTML.HTMLDocument
+    
+    resultHwnd = 0
+    resultTitle = ""
+    targetTitle = WinTitle  'Assign title to global variable
+    
+    Call SearchForIEWindow
+    
+    If resultHwnd <> 0 Then
+        Set TargetWebDoc = GetHtmlDocument(resultHwnd)
+        Set GetEdgeIeDOM = TargetWebDoc
+    Else
+        Set GetEdgeIeDOM = Nothing
+    End If
+       
+End Function
+ Function GetEdgeIeDOM(ByVal sUrl As String) As HTMLDocument
+   resultHwnd = 0
+    resultTitle = ""
+    targetTitle = WinTitle  'Assign title to global variable
+    
+    Call SearchForIEWindow
+    
+    If InStr(GetHtmlDocument(resultHwnd).Location, sUrl) Then
+        Set GetEdgeIeDOM = GetHtmlDocument(resultHwnd)
+    Else
+        Set GetEdgeIeDOM = Nothing
+    End If
+ End Function
 
-        hwndIES = enumHwndIES
-
-        If hwndIES Then
-
-            Set findEdgeDOM = getHTMLDocumentFromIES(hwndIES)
-
-            If Not findEdgeDOM Is Nothing Then
-
-                If InStr(findEdgeDOM.Title, Title) * InStr(findEdgeDOM.URL, URL) Then
-
-                    Do
-
-                        hwndIES = enumHwndIES
-
-                    Loop While hwndIES
-
-                    Exit Function
-
-                Else
-
-                    Set findEdgeDOM = Nothing
-
-                End If
-
-            End If
-
-        End If
-
-    Loop While hwndIES
-
+Function SearchForIEWindow()
+'----------------------------------------------------------------------------------
+'Note : This method will continuously look for the target window or timeout
+'       Default timeout is 3 seconds (timeoutseconds)
+'----------------------------------------------------------------------------------
+        
+    searchTimeStart = Timer
+    timeoutseconds = 3          'in seconds
+    
+    While resultHwnd = 0
+        If Timer - searchTimeStart > timeoutseconds Then Exit Function
+        EnumWindows AddressOf EnumWindowsProc, 0&
+        DoEvents
+    Wend
+    
 End Function
 
-Public Function enumHwndIES() As Long
 
-    'Get all hwnds of IES
-
-    If Len(strHwndIES) = 0 Then
-
-        EnumWindows AddressOf EnumWindowsProc, 0
-
-        lngHwndIndex = 0
-
-    End If
-
-    'Exit function when overflow
-
-    If lngHwndIndex + 1 > (Len(strHwndIES) - Len(Replace(strHwndIES, ",", ""))) Then
-
-        enumHwndIES = 0
-
-        strHwndIES = ""
-
-        Exit Function
-
-    End If
-
-    'Return IES hwnd one by one
-
-    enumHwndIES = CLng(Split(Left(strHwndIES, Len(strHwndIES) - 1), ",")(lngHwndIndex))
-
-    lngHwndIndex = lngHwndIndex + 1
-
-End Function
-
-Public Function EnumWindowsProc(ByVal hWnd As Long, ByVal lParam As Long) As Boolean
-
-    Dim lngProcessID As Long
-
-    GetWindowThreadProcessId hWnd, lngProcessID
-
-    EnumChildWindows hWnd, AddressOf EnumChildProc, lngProcessID
-
+Function EnumWindowsProc(ByVal hwnd As Long, ByVal lParam As Long) As Boolean
+'----------------------------------------------------------------------------------
+'Note : This function tries to find the Chrome_WidgetWin Class object
+'       This object shall include a handle to the Internet Explorer_Server class
+'----------------------------------------------------------------------------------
+ 
     EnumWindowsProc = True
-
-End Function
-
-Public Function EnumChildProc(ByVal hWnd As Long, ByVal lParam As Long) As Boolean
-
-    Dim strTargetClass As String, strClassName As String
-
-    strTargetClass = "Internet Explorer_Server"
-
-    strClassName = getClass(hWnd)
-
-    If strClassName = strTargetClass Then
-
-        If GetObject("winmgmts:").ExecQuery("Select Name from Win32_Process WHERE ProcessId='" & lParam & "' AND Name='msedge.exe'").Count Then
-
-            strHwndIES = strHwndIES & hWnd & ","
-
-            lngProcessID_Close = lParam
-
-            EnumChildProc = False
-
-            Exit Function
-
-        End If
-
-    End If
-
-    EnumChildProc = True
-
-End Function
-
-Private Function getClass(hWnd As Long) As String
-
-    Dim strClassName As String
-
-    Dim lngRetLen As Long
-
-
-    strClassName = Space(255)
-
-    lngRetLen = GetClassName(hWnd, strClassName, Len(strClassName))
-
-    getClass = Left(strClassName, lngRetLen)
-
-End Function
-
-Public Function getHTMLDocumentFromIES(ByVal hWnd As Long) As Object
-
-    Dim iid(0 To 3) As Long
-
-    Dim lMsg As Long, lRes As Long
-
-    lMsg = RegisterWindowMessage("WM_HTML_GETOBJECT")
-
-    SendMessageTimeout hWnd, lMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, lRes
-
-    If lRes Then
-
-        IIDFromString StrPtr(GUID_IHTMLDocument2), iid(0)
-
-        ObjectFromLresult lRes, iid(0), 0, getHTMLDocumentFromIES
-
-    End If
-
-End Function
-
-Public Sub closeEdge(Title As String, URL As String)
-
-    'Close a Edge browser (the last one in EnumWindows order) with criteria-hitting webpage
-
-    lngProcessID_Close = 0
-
-    Dim findEdgeDOM As Object
-
-    Dim hwndIES As Long
-
-    Do
-
-        hwndIES = enumHwndIES
-
-        If hwndIES Then
-
-            Set findEdgeDOM = getHTMLDocumentFromIES(hwndIES)
-
-            If InStr(findEdgeDOM.Title, Title) * InStr(findEdgeDOM.URL, URL) Then
-
-                Shell "TaskKill /pid " & lngProcessID_Close
-
-                Do
-
-                    hwndIES = enumHwndIES
-
-                Loop While hwndIES
-
-                Exit Sub
-
-            End If
-
-        End If
-
-    Loop While hwndIES
-
-End Sub
-Sub findEdgeDOM_DemoProc()
-    Dim doc As New HTMLDocument
-    Set doc = findEdgeDOM("reddit.com")
+ 
+    Dim sTitle As String
+    Dim sClassName As String
     
-    doc.parentWindow.execScript ele & ".dispatchEvent(new Event('event', {bubbles:true}));"
+    sTitle = Space(1024)
+    sClassName = Space(1024)
     
-
-End Sub
-Public Function jsWindowOpen(ByVal sUrl As String) As String
-    jsWindowOpen = Replace("window.open('sReplace','_self');", "sReplace", sUrl)
-End Function
-Public Function jsDispatchEvent(ByVal sElem As String, ByVal ev As String) As String
-    jsDispatchEvent = sElem & Replace(".dispatchEvent(new Event('event', {bubbles:true}));", "event", ev)
-End Function
-Sub goEdge()
-
-    'Go through every Edge webpage (opened in IE mode) and print out hwndIES, webpage Title & webpage URL
-
-    Dim hwndIES As Long
-
-    'Dim docHTML As MSHTML.HTMLDocument     '--- Early Binding
-
-    Dim docHTML As Object                   '--- Late Binding
-
-    Do
-
-        hwndIES = enumHwndIES
-
-        If hwndIES Then
-
-            Set docHTML = getHTMLDocumentFromIES(hwndIES)
-
-            Debug.Print hwndIES, docHTML.Title, docHTML.URL
-
-        Else
-
-            Debug.Print "Procedure End"
-
+    GetWindowText hwnd, sTitle, 1024
+    GetClassName hwnd, sClassName, 1024
+    
+    sTitle = Replace(Trim(sTitle), Chr(0), "")
+    sClassName = Replace(Trim(sClassName), Chr(0), "")
+    
+    If InStr(sClassName, "Chrome_WidgetWin") Then
+        If InStr(sTitle, targetTitle) Then
+            resultTitle = sTitle
+            EnumWindowsProc = False
+            ieHwnd = hwnd
         End If
+            
+        If FindWindowEx(hwnd, 0&, vbNullString, vbNullString) > 0 Then
+            EnumChildWindows hwnd, AddressOf EnumChildWindowsProc, 0&
+        End If
+        
+        If resultHwnd <> 0 Then EnumWindowsProc = False    'Set to False to stop enum
+    End If
+    
+End Function
 
-    Loop While hwndIES
 
-End Sub
+Function EnumChildWindowsProc(ByVal hwnd As Long, ByVal lParam As Long) As Boolean
+'----------------------------------------------------------------------------------
+'Note : This function tries to find the Internet Explorer_Server Class object
+'       This object is required for DOM automation of IE object.
+'----------------------------------------------------------------------------------
+ 
+    EnumChildWindowsProc = True
+ 
+    Dim sTitle2 As String
+    Dim sClassName2 As String
+    
+    sTitle2 = Space(1024)
+    sClassName2 = Space(1024)
+    
+    GetWindowText hwnd, sTitle2, 1024
+    GetClassName hwnd, sClassName2, 1024
+    
+    sTitle2 = Replace(Trim(sTitle2), Chr(0), "")
+    sClassName2 = Replace(Trim(sClassName2), Chr(0), "")
+    
+    If Len(resultTitle) = 0 And InStr(sTitle2, targetTitle) Then resultTitle = sTitle2
+    
+    If sClassName2 = "Internet Explorer_Server" Then
+        If Len(resultTitle) > 0 Then
+            resultHwnd = hwnd
+            EnumChildWindowsProc = False
+        End If
+    End If
+    
+End Function
 
-Sub openEdgeByURL_DemoProc()
 
-    'Open Edge browser to specific URL
+Function GetHtmlDocument(ByVal hwnd_InternetExplorer_Server As LongPtr, Optional ByVal uTimeout As Long = 1000, Optional ByVal documentVersion As Integer = 1) As Object
+'----------------------------------------------------------------------------------
+'Note : Obtains IE Dom object using winAPI
+'----------------------------------------------------------------------------------
 
-    openEdgeByURL "https://google.com"
-
-End Sub
-
-Public Sub openEdgeByURL(URL As String)
-
-    'Please change the path to your msedge.exe location in your PC
-
-    Shell "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe -url " & URL, vbNormalFocus
-
-End Sub
-
-Sub closeEdge_DemoProc()
-
-    'Close Edge browser
-
-    closeEdge "Enter Part of Webpage Title Here", "Enter Part of Webpage URL Here"
-
-End Sub
-Sub EdgeTest()
-Debug.Print Chr(34)
-End Sub
+    Dim lngMsg As Long
+    Dim interfaceID(1) As Currency
+    Set GetHtmlDocument = Nothing
+ 
+    lngMsg = RegisterWindowMessageW(StrPtr("WM_HTML_GETOBJECT"))
+    
+    If lngMsg <> 0 Then
+        Dim lpdwResult As Long
+        If SendMessageTimeoutW(hwnd_InternetExplorer_Server, lngMsg, 0, 0, 2, uTimeout, lpdwResult) <> 0 Then   '2 = Abort If Hung
+            Dim hResult As Long
+            hResult = ObjectFromLresult(lpdwResult, interfaceID(0), 0, GetHtmlDocument)
+            If hResult <> 0 Then err.Raise hResult, "GetHtmlDocument", "Unable to get the DOM object of Internet Explorer_Server"
+        End If
+    End If
+    
+End Function
