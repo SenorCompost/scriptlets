@@ -1,0 +1,72 @@
+Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+Public Declare PtrSafe Function FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+Public Declare PtrSafe Function FindWindowEx Lib "user32" Alias "FindWindowExA" (ByVal hWnd1 As Long, ByVal hWnd2 As Long, ByVal lpsz1 As String, ByVal lpsz2 As String) As Long
+Public Declare PtrSafe Function SetForegroundWindow Lib "user32" (ByVal hWnd As Long) As Long
+Public Declare PtrSafe Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hWnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Any) As Long
+Public Declare PtrSafe Function SendMessageByString Lib "user32" Alias "SendMessageA" (ByVal hWnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As String) As Long
+Public Declare PtrSafe Function PostMessage Lib "user32" Alias "PostMessageA" (ByVal hWnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Any) As Long
+Public Declare PtrSafe Sub keybd_event Lib "user32" (ByVal bVk As Byte, ByVal bScan As Byte, ByVal dwFlags As Long, ByVal dwExtraInfo As Long)
+Public Const BM_CLICK = &HF5
+Public Const WM_SETTEXT = &HC
+Public Const WM_GETTEXT = &HD
+Public Const WM_GETTEXTLENGTH = &HE
+Public Const VK_KEYDOWN = &H0
+Public Const VK_KEYUP = &H2
+Public Const VK_CONTROL = &H11
+
+Sub just()
+    Dim h As Long
+    h = windowText("Save As")
+  '  h = FindWindowEx(h, 0, "Button", "&Save")
+    
+    Debug.Print h
+    'SetForegroundWindow h
+'    SendMessage h, BM_CLICK, 0, 0
+End Sub
+
+
+Public Declare PtrSafe Function FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+Public Declare PtrSafe Function GetWindowTextLengthA Lib "user32" (ByVal hWnd As LongPtr) As Long
+Public Declare PtrSafe Function GetWindowText Lib "user32" Alias "GetWindowTextA" (ByVal hWnd As LongPtr, ByVal lpString As String, ByVal cch As LongPtr) As Long
+Public Declare PtrSafe Function GetWindowLong Lib "user32" Alias "GetWindowLongA" (ByVal hWnd As LongPtr, ByVal nIndex As Long) As Long
+Public Declare PtrSafe Function GetWindow Lib "user32" (ByVal hWnd As LongPtr, ByVal wCmd As Long) As Long
+Public Const GWL_STYLE = -16           'Sets a new window style
+Public Const WS_VISIBLE = &H10000000   'The window is initially visible
+Public Const GW_HWNDNEXT = 2
+Private Function ListWindows()
+    Const GWL_STYLE = -16           'Sets a new window style
+    Const WS_VISIBLE = &H10000000   'The window is initially visible
+    Const GW_HWNDNEXT = 2           'The retrieved handle identifies the window below the specified window in the Z order
+    
+    Dim hWnd As LongPtr, sTitle As String
+    hWnd = FindWindow(vbNullString, vbNullString)
+    
+    While hWnd
+        sTitle = Space(GetWindowTextLengthA(hWnd) + 1)
+        sTitle = Left(sTitle, GetWindowText(hWnd, sTitle, Len(sTitle)))
+        
+        If (GetWindowLong(hWnd, GWL_STYLE) And WS_VISIBLE) = WS_VISIBLE Then    'only list visible windows
+            If Len(Trim(sTitle)) > 0 Then                                       'ignore blank window titles
+                Debug.Print sTitle, hWnd
+            End If
+        End If
+              
+        hWnd = GetWindow(hWnd, GW_HWNDNEXT)
+    Wend
+    
+End Function
+Function windowText(ByVal winText As String) As Long
+    Dim hWnd As LongPtr, sTitle As String
+    hWnd = FindWindow(vbNullString, vbNullString)
+    
+    While hWnd
+        sTitle = Space(GetWindowTextLengthA(hWnd) + 1)
+        sTitle = Left(sTitle, GetWindowText(hWnd, sTitle, Len(sTitle)))
+        
+        If (GetWindowLong(hWnd, GWL_STYLE) And WS_VISIBLE) = WS_VISIBLE Then    'only list visible windows
+            If InStr(sTitle, winText) Then windowText = CLng(hWnd): Exit Function
+        End If
+              
+        hWnd = GetWindow(hWnd, GW_HWNDNEXT)
+    Wend
+End Function
