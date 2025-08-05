@@ -1,0 +1,94 @@
+Public Declare PtrSafe Function FindWindow Lib "user32" Alias "FindWindowA" ( _
+    ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+
+Public Declare PtrSafe Function FindWindowEx Lib "user32" Alias "FindWindowExA" ( _
+    ByVal hWndParent As Long, ByVal hWndChildAfter As Long, _
+    ByVal lpszClass As String, ByVal lpszWindow As String) As Long
+
+Public Declare PtrSafe Function SendMessage Lib "user32" Alias "SendMessageA" ( _
+    ByVal hWnd As Long, ByVal wMsg As Long, _
+    ByVal wParam As Long, ByVal lParam As String) As Long
+
+Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+Const WM_SETTEXT = &HC
+
+Public Declare PtrSafe Function GetClassName Lib "user32" Alias "GetClassNameA" (ByVal hWnd As Long, ByVal Buffer As String, ByVal bufferLength As Integer) As Long
+Public Declare PtrSafe Function GetWindowTextLengthA Lib "user32" (ByVal hWnd As Long) As Long
+Public Declare PtrSafe Function GetWindowText Lib "user32" Alias "GetWindowTextA" (ByVal hWnd As Long, ByVal lpString As String, ByVal cch As Long) As Long
+Public Declare PtrSafe Function GetWindowLong Lib "user32" Alias "GetWindowLongA" (ByVal hWnd As Long, ByVal nIndex As Long) As Long
+Public Declare PtrSafe Function GetWindow Lib "user32" (ByVal hWnd As Long, ByVal wCmd As Long) As Long
+Public Const GWL_STYLE = -16           'Sets a new window style
+Public Const WS_VISIBLE = &H10000000   'The window is initially visible
+Public Const GW_HWNDNEXT = 2
+Public Const WM_GETTEXT = &HD
+Public Const WM_GETTEXTLENGTH = &HE
+Private Function ListWindows()
+    Const GWL_STYLE = -16           'Sets a new window style
+    Const WS_VISIBLE = &H10000000   'The window is initially visible
+    Const GW_HWNDNEXT = 2           'The retrieved handle identifies the window below the specified window in the Z order
+    
+    Dim hWnd As Long, sTitle As String
+    hWnd = FindWindow(vbNullString, vbNullString)
+    
+    While hWnd
+        sTitle = Space(GetWindowTextLengthA(hWnd) + 1)
+        sTitle = Left(sTitle, GetWindowText(hWnd, sTitle, Len(sTitle)))
+        
+        'If (GetWindowLong(hWnd, GWL_STYLE) And WS_VISIBLE) = WS_VISIBLE Then
+       ' If GetWindowLong(hWnd, GWL_STYLE) Then
+            If Len(Trim(sTitle)) > 0 Then Debug.Print GetWindowClassName(hWnd), sTitle, hWnd
+            
+       '  End If
+       ' End If
+              
+        hWnd = GetWindow(hWnd, GW_HWNDNEXT)
+    Wend
+    
+End Function
+Function windowText(ByVal winText As String) As Long
+    Dim hWnd As Long, sTitle As String
+    hWnd = FindWindow(vbNullString, vbNullString)
+    
+    While hWnd
+        sTitle = Space(GetWindowTextLengthA(hWnd) + 1)
+        sTitle = Left(sTitle, GetWindowText(hWnd, sTitle, Len(sTitle)))
+        
+        If (GetWindowLong(hWnd, GWL_STYLE) And WS_VISIBLE) = WS_VISIBLE Then    'only list visible windows
+            If InStr(sTitle, winText) Then windowText = hWnd: Exit Function
+        End If
+              
+        hWnd = GetWindow(hWnd, GW_HWNDNEXT)
+    Wend
+End Function
+Sub FillSaveAsFileName()
+    Dim hEdit As Long, hDialog As Long, hWndSave As Long, arrSaveAs As Variant, item As Variant, filePath As String
+    filePath = Environ("Userprofile") & "\Desktop\MooCow.jpg"
+    arrSaveAs = Array("DUIViewWndClassName", "DirectUIHWND", "FloatNotifySink", "ComboBox")
+ 
+'WAIT FOR PARENT WINDOW
+    Do
+        hDialog = FindWindow("#32770", "Save Picture")
+        Sleep 100
+    DoEvents: Loop While hDialog = 0
+    
+'WAIT FOR SAVE BUTTNON
+      Do
+        hWndSave = FindWindowEx(hDialog, 0, "Button", "&Save")
+        Sleep 100
+    DoEvents: Loop While hWndSave = 0
+    
+'LOOP THROUGH PARENT'S CHILD WINDOW
+    For Each item In arrSaveAs
+        hDialog = FindWindowEx(hDialog, 0, item, vbNullString)
+    Next
+ 
+'WAIT FOR COMBOBOX FILE NAME
+    Do
+        hEdit = FindWindowEx(hDialog, 0, "Edit", vbNullString)
+        Sleep 100
+    DoEvents: Loop While hEdit = 0
+     
+  SendMessage hEdit, WM_SETTEXT, 0, filePath
+  SendMessage hWndSave, &HF5, 0, 0
+ 
+End Sub
